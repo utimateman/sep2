@@ -1,85 +1,61 @@
-import sys
-import random
-from PySide.QtCore import *
 from PySide.QtGui import *
+from PySide.QtCore import QTimer
+import PySide.QtCore as QtCore
 
-class Rabbit:
-        def __init__(self, x, y):
-                self.x = x
-                self.y = y
-                ##self.x = 0
-                
-        
-        def paintEvent(self, e):
-                p = QPainter()
-                p.begin(self)
-                p.setPen(QColor(0,0,0))
-                p.setBrush(QColor(0,127,127))
-                p.drawPolygon([QPoint(self.x,self.y), QPoint(self.x,self.y+10), QPoint(self.x + 10, self.y + 10), QPoint(self.x+10,self.y)])
-                p.end()
+class W(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.resize(400,400)
+        self.myIsMousePressing = False
+        self.p = QPainter(self)
+        self.autoFillBackground()
+        self.x = 0
+        self.y = 0
+        self.r = dict()#{(x,Y,49, 49):rect}
+        self.penColor = 1
+        self.button = QPushButton('Clear', self)
+        self.button.clicked.connect(self.clear)
+    def clear(self):
+        self.r = dict()
+        self.update()
+    def mousePressEvent(self, event):
+        self.myIsMousePressing = True
+    def mouseReleaseEvent(self, event):
+        self.myIsMousePressing = False
+    def myTimeOut(self):
+        if self.myIsMousePressing:
+            pos = self.mapFromGlobal(QCursor.pos())
+            self.x = pos.x()/50
+            self.y = pos.y()/50
+            self.r[(self.x*50, self.y*50, 10, 10)] = self.penColor
+    def paintEvent(self, event):
+        self.p.begin(self)
+        for k in self.r.keys():
+            if self.r[k] == 1:
+                self.p.setPen(QtCore.Qt.black)
+                self.p.setBrush(QtCore.Qt.black)
+            else:
+                self.p.setPen(QtCore.Qt.white)
+                self.p.setBrush(QtCore.Qt.white)
+            self.p.drawRect(*k)
+        self.p.end()
+        self.update()
 
-        
-        '''
-        def draw(self, x, y):
-                p = QPainter()
-                p.begin(self)
-                p.setPen(QColor(0,0,0))
-                p.setBrush(QColor(0,127,127))
-                p.drawPolygon([QPoint(self.x,self.y), QPoint(self.x,self.y+10), QPoint(self.x + 10, self.y + 10), QPoint(self.x+10,self.y)])
-                p.end()
-        '''
+class MyWidget(QMainWindow):
+    def __init__(self):
+        QMainWindow.__init__(self)
+        self.setMinimumSize(400, 400)
+        self.w = W()
+        self.setCentralWidget(self.w)
+        self.t = QTimer(self.w)
+        self.t.timeout.connect(self.w.myTimeOut)
+        self.t.start(1)
 
-class Animation_area(QWidget):
-        def __init__(self):
-                QWidget.__init__(self, None)
-                self.setMinimumSize(500, 500)
+    def initMenu(self):
+        self.button = QPushButton('Clear', self)
+        self.button.clicked.connect(self.clear)
 
-                self.arena_w = 500
-                self.arena_h = 500
-                
-                ##self.rabbit = Rabbit()
-                #self.timer = QTimer(self)
-                #self.connect(self.timer, SIGNAL("timeout()"), self.update_value)
-                #self.timer.start(1000)
-
-        def mousePressEvent(self, e):
-                self.rabbit = Rabbit(e.pos().x(), e.pos().y())
-                self.x = e.pos().x()
-                self.y = e.pos().y()
-                
-        def paintEvent(self, e):
-                p = QPainter()
-                p.begin(self)
-                ##self.rabbit.draw(self.x, self.y)
-                p.end()
-
-        def update_value(self):
-                   self.rabbit.random_pos(self.arena_w, self.arena_h)
-                   self.update()
-
-      
-
-class Simple_animation_window(QWidget):
-        def __init__(self):
-           QWidget.__init__(self, None)
-
-           self.anim_area = Animation_area()
-
-           layout = QVBoxLayout()
-           layout.addWidget(self.anim_area)
-
-           self.setLayout(layout)
-           self.setMinimumSize(530, 600)
-
-def main():
-           app = QApplication(sys.argv)
-
-           w = Simple_animation_window()
-           w.show()
-
-           return app.exec_()
-
-if __name__ == "__main__":
-        sys.exit(main())
-
-                        
+app = QApplication([])
+mainWin = MyWidget()
+mainWin.show()
+app.exec_()
